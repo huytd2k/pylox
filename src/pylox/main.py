@@ -11,7 +11,7 @@ class Lox:
         scanner = s.Scanner(source)
 
         for token in scanner.scan_tokens(cls):
-            print(token.type.value)
+            print(token)
 
     @classmethod
     def run_file(cls, path: str):
@@ -27,7 +27,6 @@ class Lox:
         while True:
             print("> ", end="")
             line = input()
-            line = line[:-1]  # trim newline
             if not line:
                 break
             Lox.run(line)

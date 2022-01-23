@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from nis import match
 from typing import Union
 
 
@@ -54,6 +53,27 @@ class TokenType(AutoName):
     EOF = auto()
 
 
+RESERVED_WORDS = {
+    "and": TokenType.AND,
+    "class": TokenType.CLASS,
+    "else": TokenType.ELSE,
+    "false": TokenType.FALSE,
+    "true": TokenType.TRUE,
+    "for": TokenType.FOR,
+    "fun": TokenType.FUN,
+    "if": TokenType.IF,
+    "nil": TokenType.NIL,
+    "or": TokenType.OR,
+    "print": TokenType.PRINT,
+    "return": TokenType.RETURN,
+    "super": TokenType.SUPER,
+    "this": TokenType.THIS,
+    "true": TokenType.TRUE,
+    "var": TokenType.VAR,
+    "while": TokenType.WHILE,
+}
+
+
 class Token:
     def __init__(
         self, type: Union[TokenType, str], lexeme: str, literal: object, line: int
@@ -65,7 +85,7 @@ class Token:
         self.line = line
 
     def __repr__(self) -> str:
-        return f"{self.type.value} {self.lexeme} {self.literal}"
+        return f"Token (type={self.type.value}, lexeme={self.lexeme}, literal={self.literal})"
 
 
 class Scanner:
@@ -76,20 +96,17 @@ class Scanner:
         self.start = 0
         self.current = 0
 
-    def _is_at_end(self) -> bool:
-        return self.current >= len(self._source)
+    def _is_at_end(self, offset=0) -> bool:
+        return self.current + offset >= len(self._source)
 
-    def _advance(self):
+    def _advance(self, step=1):
         char = self._source[self.current]
-        self.current += 1
+        self.current += step
         return char
 
-    def _add_token_literal(self, type: TokenType, literal: object):
+    def _add_token(self, type: TokenType, literal: object = None):
         text = self._source[self.start : self.current]
         self.tokens.append(Token(type, text, literal, self.line))
-
-    def _add_token(self, type: TokenType):
-        self._add_token_literal(type, None)
 
     def _match(self, expected: str) -> bool:
         if self._is_at_end():
@@ -129,6 +146,9 @@ class Scanner:
         elif char == "*":
             self._add_token(TokenType.STAR)
             return
+        elif char == ";":
+            self._add_token(TokenType.SEMICOLON)
+            return
         elif char == "!":
             if self._match("="):
                 self._add_token(TokenType.BANG_EQUAL)
@@ -155,18 +175,99 @@ class Scanner:
             return
         elif char == "/":
             if self._match("/"):
-                while self._peek() != "\n" and not self._is_at_end():
-                    self._advance()
+                self._inline_comment()
+            elif self._match("*"):
+                self._block_comment(lox_cls)
             else:
                 self._add_token(TokenType.SLASH)
+            return
+        elif char in (" ", "\t", "\r"):
+            return
+        elif char in ("\n"):
+            self.line += 1
+            return
+        elif char == '"':
+            self._string(lox_cls)
+            return
+        elif self._is_digit(char):
+            self._number()
+            return
+        elif self._is_alpha(char):
+            self._identifier()
             return
 
         lox_cls.error(self.line, f"Unexpected character {char}")
 
-    def _peek(self):
+    def _inline_comment(self):
+        while self._peek() != "\n" and not self._is_at_end():
+            self._advance()
+
+    def _block_comment(self, lox_cls):
+        while (
+            self._peek() != "*" or self._peek(offset=1) != "/"
+        ) and not self._is_at_end(offset=1):
+            if self._peek() == "\n":
+                self.line += 1
+            self._advance()
+        if self._is_at_end(offset=1):
+            lox_cls.error(self.line, "Unterminated block comment")
+            return
+        self._advance(step=2)
+
+    def _identifier(self):
+        while self._is_alpha_numeric(self._peek()):
+            self._advance()
+
+        value = self._source[self.start : self.current]
+        if value in RESERVED_WORDS:
+            self._add_token(RESERVED_WORDS[value])
+        else:
+            self._add_token(TokenType.IDENTIFIER)
+
+    def _is_digit(self, char: str):
+        return ord(char) >= ord("0") and ord(char) <= ord("9")
+
+    def _is_alpha(self, char: str):
+        return (
+            (ord(char) >= ord("a") and ord(char) <= ord("z"))
+            or (ord(char) >= ord("A") and ord(char) <= ord("Z"))
+            or char == "_"
+        )
+
+    def _is_alpha_numeric(self, char: str):
+        return self._is_digit(char) or self._is_alpha(char)
+
+    def _number(self):
+        while self._is_digit(self._peek()):
+            self._advance()
+
+        if self._peek() == "." and self._is_digit(self._peek(offset=1)):
+            self._advance()
+            while self._is_digit(self._peek()):
+                self._advance()
+
+        self._add_token(
+            TokenType.NUMBER, float(self._source[self.start : self.current])
+        )
+
+    def _string(self, lox_cls):
+        while self._peek() != '"' and not self._is_at_end():
+            if self._peek() == "\n":
+                self.line += 1
+            self._advance()
+
         if self._is_at_end():
+            lox_cls.error(self.line, "Unterminated string.")
+            return
+
+        self._advance()
+        value = self._source[self.start + 1 : self.current - 1]
+        self._add_token(TokenType.STRING, value)
+
+    def _peek(self, offset=0):
+        if self._is_at_end(offset):
             return "\0"
-        return self._source[self.current]
+        return self._source[self.current + offset]
 
     def scan_tokens(self, lox_cls) -> list[Token]:
         while not self._is_at_end():
