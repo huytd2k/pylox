@@ -1,10 +1,7 @@
 from enum import Enum, auto
 from typing import Union
 
-
-class AutoName(Enum):
-    def _generate_next_value_(name, _, __, ___):
-        return name
+from helper.enum import AutoName
 
 
 class TokenType(AutoName):
