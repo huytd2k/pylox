@@ -88,13 +88,29 @@ class Token:
         return f"Token (type={self.type.value}, lexeme={self.lexeme}, literal={self.literal})"
 
 
+class ScanningError(Exception):
+    def __init__(self, msg: str, line: int) -> None:
+        super().__init__(msg)
+        self.line = line
+        self.msg = msg
+
+
 class Scanner:
-    def __init__(self, source: str):
+    def __init__(self, source: str, tolerant=True):
         self._source = source
         self.tokens = []
         self.line = 1
         self.start = 0
         self.current = 0
+        self._tolerant = tolerant
+        self.errors: list[ScanningError] = []
+
+    def _error(self, msg: str):
+        err = ScanningError(msg, self.line)
+        if not self._tolerant:
+            raise err
+        else:
+            self.errors.append(err)
 
     def _is_at_end(self, offset=0) -> bool:
         return self.current + offset >= len(self._source)
@@ -117,7 +133,7 @@ class Scanner:
         self.current += 1
         return True
 
-    def _scan_token(self, lox_cls):
+    def _scan_token(self, tolarent=True):
         char = self._advance()
         if char == "(":
             self._add_token(TokenType.LEFT_PAREN)
@@ -177,7 +193,7 @@ class Scanner:
             if self._match("/"):
                 self._inline_comment()
             elif self._match("*"):
-                self._block_comment(lox_cls)
+                self._block_comment()
             else:
                 self._add_token(TokenType.SLASH)
             return
@@ -187,7 +203,7 @@ class Scanner:
             self.line += 1
             return
         elif char == '"':
-            self._string(lox_cls)
+            self._string()
             return
         elif self._is_digit(char):
             self._number()
@@ -196,13 +212,13 @@ class Scanner:
             self._identifier()
             return
 
-        lox_cls.error(self.line, f"Unexpected character {char}")
+        self._error(f"Unexpected character {char}")
 
     def _inline_comment(self):
         while self._peek() != "\n" and not self._is_at_end():
             self._advance()
 
-    def _block_comment(self, lox_cls):
+    def _block_comment(self):
         while (
             self._peek() != "*" or self._peek(offset=1) != "/"
         ) and not self._is_at_end(offset=1):
@@ -210,7 +226,7 @@ class Scanner:
                 self.line += 1
             self._advance()
         if self._is_at_end(offset=1):
-            lox_cls.error(self.line, "Unterminated block comment")
+            self._error("Unterminated block comment")
             return
         self._advance(step=2)
 
@@ -250,14 +266,14 @@ class Scanner:
             TokenType.NUMBER, float(self._source[self.start : self.current])
         )
 
-    def _string(self, lox_cls):
+    def _string(self):
         while self._peek() != '"' and not self._is_at_end():
             if self._peek() == "\n":
                 self.line += 1
             self._advance()
 
         if self._is_at_end():
-            lox_cls.error(self.line, "Unterminated string.")
+            self._error("Unterminated string.")
             return
 
         self._advance()
@@ -269,10 +285,10 @@ class Scanner:
             return "\0"
         return self._source[self.current + offset]
 
-    def scan_tokens(self, lox_cls) -> list[Token]:
+    def scan_tokens(self) -> list[Token]:
         while not self._is_at_end():
             self.start = self.current
-            self._scan_token(lox_cls)
+            self._scan_token()
 
         self.tokens.append(Token("EOF", "", None, self.line))
         return self.tokens

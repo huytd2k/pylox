@@ -10,7 +10,10 @@ class Lox:
     def run(cls, source: str):
         scanner = s.Scanner(source)
 
-        for token in scanner.scan_tokens(cls):
+        tokens = scanner.scan_tokens()
+        for err in scanner.errors:
+            Lox.error(err.line, err.msg)
+        for token in tokens:
             print(token)
 
     @classmethod
