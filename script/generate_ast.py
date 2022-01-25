@@ -20,7 +20,8 @@ def newlines(num=1):
 def define_abc_expr() -> str:
     return f"""\
 class Expr(metaclass=ABCMeta):
-    pass"""
+    def accept(self, visitor: ExprVisitor):
+        pass"""
 
 
 def define_expr(defi: str) -> str:
@@ -32,7 +33,24 @@ def define_expr(defi: str) -> str:
     return f"""\
 class {name}(Expr):
     def __init__(self, {", ".join(fields)}):
-{constructor_implement}"""
+{constructor_implement}
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_{name.lower()}(self)"""
+
+
+def define_vistor(names: list[str]):
+    def def_method(name: str):
+        return f"""\
+    def visit_{name.lower()}(self, expr: {name}):
+        pass"""
+
+    methods = [def_method(name) for name in names]
+    methods = newlines(2).join(methods)
+
+    return f"""\
+class ExprVisitor(metaclass=ABCMeta):
+{methods}"""
 
 
 def main():
@@ -62,9 +80,12 @@ def main():
         "Binary : left Expr, operator Token, right Expr",
     ]
     # fmt: on
+    names = [def_.split(":")[0].strip() for def_ in defs]
     defs = newlines(3).join([define_expr(defi) for defi in defs])
+    vistor_def = define_vistor(names)
     source += defs
-    source += newlines()
+    source += newlines(3)
+    source += vistor_def
     with open(file_path, "w") as f:
         f.write(source)
 

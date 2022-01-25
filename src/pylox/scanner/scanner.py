@@ -1,7 +1,7 @@
 from enum import auto
 from typing import Union
 
-from helper.enum import AutoName
+from pylox.helper.enum import AutoName
 
 
 class TokenType(AutoName):
