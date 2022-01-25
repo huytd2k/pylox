@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import auto
 from typing import Union
 
 from helper.enum import AutoName

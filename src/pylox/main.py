@@ -37,7 +37,6 @@ class Lox:
 
     @classmethod
     def main(cls):
-        print(sys.argv)
         if len(sys.argv) > 2:
             print("Usage: pylox [script]")
             sys.exit(64)
