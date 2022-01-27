@@ -1,6 +1,8 @@
 import sys
+from parser.ast_printer import AstPrinter
 
 import pylox.scanner.scanner as s
+from pylox.parser.parser import Parser, ParsingError
 
 
 class Lox:
@@ -13,8 +15,11 @@ class Lox:
         tokens = scanner.scan_tokens()
         for err in scanner.errors:
             Lox.error(err.line, err.msg)
-        for token in tokens:
-            print(token)
+        parser = Parser(tokens)
+        expr = parser._expression()
+        for err in parser.errors:
+            Lox.parse_error(err.token, err.msg)
+        print(AstPrinter().print(expr))
 
     @classmethod
     def run_file(cls, path: str):
@@ -48,6 +53,13 @@ class Lox:
     @classmethod
     def error(cls, line: int, message: str):
         Lox.report(line, "", message)
+
+    @classmethod
+    def parse_error(cls, token: s.Token, message: str):
+        if token.type.value == s.TokenType.EOF:
+            Lox.report(token.line, "at end", message)
+        else:
+            Lox.report(token.line, f"at {token.lexeme}", message)
 
     @classmethod
     def report(cls, line: int, where: str, message: str):
