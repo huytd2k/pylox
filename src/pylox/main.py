@@ -1,4 +1,5 @@
 import sys
+from interpreter.interpreter import Interpreter
 from parser.ast_printer import AstPrinter
 
 import pylox.scanner.scanner as s
@@ -23,6 +24,7 @@ class Lox:
         if cls.hadError:
             return None
         print(AstPrinter().print(expr))
+        print(Interpreter()._eval(expr))
 
     @classmethod
     def run_file(cls, path: str):
