@@ -19,6 +19,9 @@ class Lox:
         expr = parser._expression()
         for err in parser.errors:
             Lox.parse_error(err.token, err.msg)
+
+        if cls.hadError:
+            return None
         print(AstPrinter().print(expr))
 
     @classmethod

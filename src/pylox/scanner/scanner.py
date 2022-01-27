@@ -16,6 +16,8 @@ class TokenType(AutoName):
     SEMICOLON = auto()
     SLASH = auto()
     STAR = auto()
+    QUESTION_MARK = auto()
+    COLON = auto()
 
     BANG = auto()
     BANG_EQUAL = auto()
@@ -161,6 +163,12 @@ class Scanner:
             return
         elif char == ";":
             self._add_token(TokenType.SEMICOLON)
+            return
+        elif char == ":":
+            self._add_token(TokenType.COLON)
+            return
+        elif char == "?":
+            self._add_token(TokenType.QUESTION_MARK)
             return
         elif char == "!":
             if self._match("="):

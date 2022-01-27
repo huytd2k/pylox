@@ -115,8 +115,19 @@ class Parser:
             expr = Binary(expr, opr, right)
         return expr
 
+    def _ternary(self) -> Expr:
+        """tenary -> equality ? equality : ternary | equality"""
+        expr = self._equality()
+        if self._match(TokenType.QUESTION_MARK):
+            opr = self._previous()
+            first = self._equality()
+            colon = self._consume(TokenType.COLON, "Expected colon!")
+            second = self._ternary()
+            return Binary(expr, opr, Binary(first, colon, second))
+        return expr
+
     def _expression(self) -> Expr:
-        return self._equality()
+        return self._ternary()
 
     def parse(self) -> Expr:
         try:
