@@ -1,9 +1,8 @@
 import sys
 from interpreter.interpreter import Interpreter
-from parser.ast_printer import AstPrinter
 
 import pylox.scanner.scanner as s
-from pylox.parser.parser import Parser, ParsingError
+from pylox.parser.parser import Parser
 
 
 class Lox:
@@ -17,14 +16,13 @@ class Lox:
         for err in scanner.errors:
             Lox.error(err.line, err.msg)
         parser = Parser(tokens)
-        expr = parser._expression()
+        stmts = parser.parse()
         for err in parser.errors:
             Lox.parse_error(err.token, err.msg)
 
         if cls.hadError:
             return None
-        print(AstPrinter().print(expr))
-        print(Interpreter()._eval(expr))
+        Interpreter().interpret(stmts)
 
     @classmethod
     def run_file(cls, path: str):

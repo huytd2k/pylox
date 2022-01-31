@@ -1,18 +1,39 @@
-from cmath import exp
+from parser.stmt import Expression, Print, Stmt, StmtVisitor
 from pylox.parser.expr import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
-from scanner.scanner import Token, TokenType
+from scanner.scanner import TokenType
 
 
-class Interpreter(ExprVisitor):
+class RuntimeError(Exception):
+    pass
+
+
+class Interpreter(ExprVisitor, StmtVisitor):
     def _eval(self, expr: Expr) -> object:
         return expr.accept(self)
 
-    def _is_truthy(obj: object) -> bool:
-        if isinstance(float, obj):
+    def visit_expression(self, stmt: Expression):
+        self._eval(stmt.expression)
+        return
+
+    def visit_print(self, stmt: Print):
+        print(self._eval(stmt.expression))
+
+    def interpret(self, stmts: list[Stmt]):
+        try:
+            for stmt in stmts:
+                self.execute(stmt)
+        except RuntimeError as e:
+            raise
+
+    def execute(self, stmt: Stmt):
+        return stmt.accept(self)
+
+    def _is_truthy(self, obj: object) -> bool:
+        if isinstance(obj, float):
             return obj != 0
-        if isinstance(str, obj):
+        if isinstance(obj, str):
             return obj != ""
-        if isinstance(bool, obj):
+        if isinstance(obj, bool):
             return obj
         if obj is None:
             return False
@@ -60,7 +81,7 @@ class Interpreter(ExprVisitor):
         if self._types_equal(expr.operator.type, TokenType.BANG_EQUAL):
             return left != right
         if self._types_equal(expr.operator.type, TokenType.QUESTION_MARK):
-            if self._is_truthy(self._eval(left)):
+            if self._is_truthy(left):
                 return self._eval(expr.right.left)
             else:
                 return self._eval(expr.right.right)

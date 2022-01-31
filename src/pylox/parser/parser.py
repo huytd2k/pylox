@@ -1,4 +1,5 @@
 from __future__ import annotations
+from parser.stmt import Stmt, Print, Expression
 from pylox.parser.expr import Binary, Expr, Grouping, Literal, Unary
 from pylox.scanner.scanner import Token, TokenType
 
@@ -129,8 +130,26 @@ class Parser:
     def _expression(self) -> Expr:
         return self._ternary()
 
+    def _print_statement(self) -> Stmt:
+        expression = self._expression()
+        self._consume(TokenType.SEMICOLON, "Expect semicolon after a value.")
+        return Print(expression)
+
+    def _expression_statement(self) -> Stmt:
+        expression = self._expression()
+        self._consume(TokenType.SEMICOLON, "Expect semicolon after expression.")
+        return Expression(expression)
+
+    def _statement(self) -> Stmt:
+        if self._match(TokenType.PRINT):
+            return self._print_statement()
+        return self._expression_statement()
+
     def parse(self) -> Expr:
         try:
-            self._expression()
+            statements = []
+            while not self._is_at_end():
+                statements.append(self._statement())
+            return statements
         except ParsingError as e:
             return None

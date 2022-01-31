@@ -1,7 +1,6 @@
 #! python
 import sys
 import os
-from re import sub
 
 
 def declare_imports() -> str:
@@ -10,36 +9,36 @@ def declare_imports() -> str:
 from __future__ import annotations
 from abc import ABCMeta
 
-from pylox.scanner.scanner import Token"""
+from pylox.parser.expr import Expr"""
 
 
 def newlines(num=1):
     return "\n" * num
 
 
-def define_abc_expr() -> str:
+def define_abc_expr(basename: str) -> str:
     return f"""\
-class Expr(metaclass=ABCMeta):
-    def accept(self, visitor: ExprVisitor):
+class {basename}(metaclass=ABCMeta):
+    def accept(self, visitor: {basename}Visitor):
         pass"""
 
 
-def define_expr(defi: str) -> str:
+def define_expr(defi: str, basename: str) -> str:
     name = defi.split(":")[0].strip()
     fields = defi.split(":")[1].strip().split(",")
     fields = [f.strip().replace(" ", ": ") for f in fields]
     props = [f.split(":")[0] for f in fields]
     constructor_implement = "\n".join(f"        self.{prop} = {prop}" for prop in props)
     return f"""\
-class {name}(Expr):
+class {name}({basename}):
     def __init__(self, {", ".join(fields)}):
 {constructor_implement}
 
-    def accept(self, visitor: ExprVisitor):
+    def accept(self, visitor: {basename}Visitor):
         return visitor.visit_{name.lower()}(self)"""
 
 
-def define_vistor(names: list[str]):
+def define_vistor(names: list[str], basename: str):
     def def_method(name: str):
         return f"""\
     def visit_{name.lower()}(self, expr: {name}):
@@ -49,7 +48,7 @@ def define_vistor(names: list[str]):
     methods = newlines(2).join(methods)
 
     return f"""\
-class ExprVisitor(metaclass=ABCMeta):
+class {basename}Visitor(metaclass=ABCMeta):
 {methods}"""
 
 
@@ -69,20 +68,18 @@ def main():
         [
             declare_imports(),
             newlines(3),
-            define_abc_expr(),
+            define_abc_expr(basename),
             newlines(3),
         ]
     )
     defs = [
-        "Unary : operator Token, right Expr",
-        "Grouping : expression Expr",
-        "Literal : value object",
-        "Binary : left Expr, operator Token, right Expr",
+        "Expression : expression Expr",
+        "Print : expression Expr",
     ]
     # fmt: on
     names = [def_.split(":")[0].strip() for def_ in defs]
-    defs = newlines(3).join([define_expr(defi) for defi in defs])
-    vistor_def = define_vistor(names)
+    defs = newlines(3).join([define_expr(defi, basename) for defi in defs])
+    vistor_def = define_vistor(names, basename)
     source += defs
     source += newlines(3)
     source += vistor_def
