@@ -1,6 +1,6 @@
 from __future__ import annotations
-from parser.stmt import Stmt, Print, Expression
-from pylox.parser.expr import Binary, Expr, Grouping, Literal, Unary
+from parser.stmt import Stmt, Print, Expression, Var
+from pylox.parser.expr import Assign, Binary, Expr, Grouping, Literal, Unary, Variable
 from pylox.scanner.scanner import Token, TokenType
 
 
@@ -21,6 +21,23 @@ class Parser:
         if not self._is_at_end():
             self.current += 1
         return self._previous()
+
+    def _synchronize(self):
+        self._advance()
+        while not self._is_at_end():
+            if self._previous().type.value == TokenType.SEMICOLON.value:
+                return
+            if self._peek().type in (
+                TokenType.CLASS.value,
+                TokenType.FUN.value,
+                TokenType.FOR.value,
+                TokenType.IF.value,
+                TokenType.WHILE.value,
+                TokenType.PRINT.value,
+                TokenType.RETURN.value,
+            ):
+                return
+            self._advance()
 
     def _peek(self) -> Token:
         return self.tokens[self.current]
@@ -62,6 +79,8 @@ class Parser:
             expr = self._expression()
             self._consume(TokenType.RIGHT_PAREN, "Expect ')' after an expression")
             return Grouping(expr)
+        if self._match(TokenType.IDENTIFIER):
+            return Variable(self._previous())
         raise self._error(self._peek(), "Expected expression!")
 
     def _is_at_end(self) -> bool:
@@ -127,8 +146,20 @@ class Parser:
             return Binary(expr, opr, Binary(first, colon, second))
         return expr
 
+    def _assignment(self) -> Expr:
+        expr = self._ternary()
+
+        if self._match(TokenType.EQUAL):
+            equals = self._previous()
+            value = self._assignment()
+            if isinstance(expr, Variable):
+                return Assign(expr.name, value)
+            self._error(equals, "Invalid assignment target.")
+
+        return expr
+
     def _expression(self) -> Expr:
-        return self._ternary()
+        return self._assignment()
 
     def _print_statement(self) -> Stmt:
         expression = self._expression()
@@ -145,11 +176,30 @@ class Parser:
             return self._print_statement()
         return self._expression_statement()
 
+    def _declaration(self) -> Stmt:
+        try:
+            if self._match(TokenType.VAR):
+                return self._var_declaration()
+            return self._statement()
+        except ParsingError as e:
+            self._synchronize()
+
+    def _var_declaration(self) -> Stmt:
+        name = self._consume(TokenType.IDENTIFIER, "Expect variable name.")
+
+        init = None
+        if self._match(TokenType.EQUAL):
+            init = self._expression()
+        self._consume(
+            TokenType.SEMICOLON, "Expect semicolon after variable declaration"
+        )
+        return Var(name, init)
+
     def parse(self) -> Expr:
         try:
             statements = []
             while not self._is_at_end():
-                statements.append(self._statement())
+                statements.append(self._declaration())
             return statements
         except ParsingError as e:
             return None

@@ -2,6 +2,21 @@
 import sys
 import os
 
+EXPR_DEFS = [
+    "Assign : name Token, expr Expr",
+    "Binary : left Expr, operator Token, right Expr",
+    "Grouping : expression Expr",
+    "Literal : value object",
+    "Unary : operator token, right Expr",
+    "Variable: name Token",
+]
+
+STMT_DEFS = [
+    "Expression : expression Expr",
+    "Print : expression Expr",
+    "Var : name Token, init Expr",
+]
+
 
 def declare_imports() -> str:
     return """\
@@ -9,6 +24,7 @@ def declare_imports() -> str:
 from __future__ import annotations
 from abc import ABCMeta
 
+from pylox.scanner.scanner import Token
 from pylox.parser.expr import Expr"""
 
 
@@ -41,7 +57,7 @@ class {name}({basename}):
 def define_vistor(names: list[str], basename: str):
     def def_method(name: str):
         return f"""\
-    def visit_{name.lower()}(self, expr: {name}):
+    def visit_{name.lower()}(self, {basename.lower()}: {name}):
         pass"""
 
     methods = [def_method(name) for name in names]
@@ -72,11 +88,8 @@ def main():
             newlines(3),
         ]
     )
-    defs = [
-        "Expression : expression Expr",
-        "Print : expression Expr",
-    ]
     # fmt: on
+    defs = EXPR_DEFS
     names = [def_.split(":")[0].strip() for def_ in defs]
     defs = newlines(3).join([define_expr(defi, basename) for defi in defs])
     vistor_def = define_vistor(names, basename)

@@ -10,13 +10,23 @@ class Expr(metaclass=ABCMeta):
         pass
 
 
-class Unary(Expr):
-    def __init__(self, operator: Token, right: Expr):
+class Assign(Expr):
+    def __init__(self, name: Token, expr: Expr):
+        self.name = name
+        self.expr = expr
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_assign(self)
+
+
+class Binary(Expr):
+    def __init__(self, left: Expr, operator: Token, right: Expr):
+        self.left = left
         self.operator = operator
         self.right = right
 
     def accept(self, visitor: ExprVisitor):
-        return visitor.visit_unary(self)
+        return visitor.visit_binary(self)
 
 
 class Grouping(Expr):
@@ -35,18 +45,28 @@ class Literal(Expr):
         return visitor.visit_literal(self)
 
 
-class Binary(Expr):
-    def __init__(self, left: Expr, operator: Token, right: Expr):
-        self.left = left
+class Unary(Expr):
+    def __init__(self, operator: token, right: Expr):
         self.operator = operator
         self.right = right
 
     def accept(self, visitor: ExprVisitor):
-        return visitor.visit_binary(self)
+        return visitor.visit_unary(self)
+
+
+class Variable(Expr):
+    def __init__(self, name: Token):
+        self.name = name
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_variable(self)
 
 
 class ExprVisitor(metaclass=ABCMeta):
-    def visit_unary(self, expr: Unary):
+    def visit_assign(self, expr: Assign):
+        pass
+
+    def visit_binary(self, expr: Binary):
         pass
 
     def visit_grouping(self, expr: Grouping):
@@ -55,5 +75,8 @@ class ExprVisitor(metaclass=ABCMeta):
     def visit_literal(self, expr: Literal):
         pass
 
-    def visit_binary(self, expr: Binary):
+    def visit_unary(self, expr: Unary):
+        pass
+
+    def visit_variable(self, expr: Variable):
         pass

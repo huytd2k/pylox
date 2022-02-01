@@ -1,15 +1,46 @@
-from parser.stmt import Expression, Print, Stmt, StmtVisitor
-from pylox.parser.expr import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
-from scanner.scanner import TokenType
+from pylox.parser.stmt import Expression, Print, Stmt, StmtVisitor, Var
+from pylox.parser.expr import (
+    Assign,
+    Binary,
+    Expr,
+    ExprVisitor,
+    Grouping,
+    Literal,
+    Unary,
+    Variable,
+)
+from pylox.scanner.scanner import TokenType, Token
+from .environment import Environment
 
 
 class RuntimeError(Exception):
-    pass
+    def __init__(self, token: Token, msg: str) -> None:
+        super().__init__(msg)
+        self.token = token
+        self.msg = msg
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
+    def __init__(self) -> None:
+        self._env = Environment()
+
     def _eval(self, expr: Expr) -> object:
         return expr.accept(self)
+
+    def visit_assign(self, expr: Assign):
+        val = self._eval(expr.expr)
+        self._env.assign(expr.name, val)
+        return val
+
+    def visit_var(self, stmt: Var):
+        init_val = None
+        if stmt.init is not None:
+            init_val = self._eval(stmt.init)
+
+        self._env.define(stmt.name.lexeme, init_val)
+
+    def visit_variable(self, expr: Variable):
+        return self._env.get(expr.name)
 
     def visit_expression(self, stmt: Expression):
         self._eval(stmt.expression)

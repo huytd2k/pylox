@@ -2,6 +2,7 @@
 from __future__ import annotations
 from abc import ABCMeta
 
+from pylox.scanner.scanner import Token
 from pylox.parser.expr import Expr
 
 
@@ -26,9 +27,21 @@ class Print(Stmt):
         return visitor.visit_print(self)
 
 
+class Var(Stmt):
+    def __init__(self, name: Token, init: Expr):
+        self.name = name
+        self.init = init
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_var(self)
+
+
 class StmtVisitor(metaclass=ABCMeta):
     def visit_expression(self, stmt: Expression):
         pass
 
     def visit_print(self, stmt: Print):
+        pass
+
+    def visit_var(self, stmt: Var):
         pass
