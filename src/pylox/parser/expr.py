@@ -46,7 +46,7 @@ class Literal(Expr):
 
 
 class Unary(Expr):
-    def __init__(self, operator: token, right: Expr):
+    def __init__(self, operator: Token, right: Expr):
         self.operator = operator
         self.right = right
 
