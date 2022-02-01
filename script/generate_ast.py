@@ -15,6 +15,7 @@ STMT_DEFS = [
     "Expression : expression Expr",
     "Print : expression Expr",
     "Var : name Token, init Expr",
+    "Block: statements list[Stmt]",
 ]
 
 
@@ -89,7 +90,7 @@ def main():
         ]
     )
     # fmt: on
-    defs = EXPR_DEFS
+    defs = STMT_DEFS
     names = [def_.split(":")[0].strip() for def_ in defs]
     defs = newlines(3).join([define_expr(defi, basename) for defi in defs])
     vistor_def = define_vistor(names, basename)

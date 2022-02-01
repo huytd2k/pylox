@@ -36,6 +36,14 @@ class Var(Stmt):
         return visitor.visit_var(self)
 
 
+class Block(Stmt):
+    def __init__(self, statements: list[Stmt]):
+        self.statements = statements
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_block(self)
+
+
 class StmtVisitor(metaclass=ABCMeta):
     def visit_expression(self, stmt: Expression):
         pass
@@ -44,4 +52,7 @@ class StmtVisitor(metaclass=ABCMeta):
         pass
 
     def visit_var(self, stmt: Var):
+        pass
+
+    def visit_block(self, stmt: Block):
         pass

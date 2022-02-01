@@ -1,4 +1,4 @@
-from pylox.parser.stmt import Expression, Print, Stmt, StmtVisitor, Var
+from pylox.parser.stmt import Expression, Print, Stmt, StmtVisitor, Var, Block
 from pylox.parser.expr import (
     Assign,
     Binary,
@@ -26,6 +26,19 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def _eval(self, expr: Expr) -> object:
         return expr.accept(self)
+
+    def _execute_blocks(self, statements: list[Stmt], env: Environment):
+        previous = self._env
+        try:
+            self._env = env
+            for stmt in statements:
+                self.execute(stmt)
+        finally:
+            self._env = previous
+
+    def visit_block(self, stmt: Block):
+        self._execute_blocks(stmt.statements, Environment(self._env))
+        return
 
     def visit_assign(self, expr: Assign):
         val = self._eval(expr.expr)
