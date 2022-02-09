@@ -44,6 +44,25 @@ class Block(Stmt):
         return visitor.visit_block(self)
 
 
+class If(Stmt):
+    def __init__(self, condition: Expr, then_branch: Stmt, else_branch: Stmt):
+        self.condition = condition
+        self.then_branch = then_branch
+        self.else_branch = else_branch
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_if(self)
+
+
+class While(Stmt):
+    def __init__(self, condition: Expr, stmt: Stmt):
+        self.condition = condition
+        self.stmt = stmt
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_while(self)
+
+
 class StmtVisitor(metaclass=ABCMeta):
     def visit_expression(self, stmt: Expression):
         pass
@@ -55,4 +74,10 @@ class StmtVisitor(metaclass=ABCMeta):
         pass
 
     def visit_block(self, stmt: Block):
+        pass
+
+    def visit_if(self, stmt: If):
+        pass
+
+    def visit_while(self, stmt: While):
         pass

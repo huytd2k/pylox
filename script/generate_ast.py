@@ -7,7 +7,7 @@ EXPR_DEFS = [
     "Binary : left Expr, operator Token, right Expr",
     "Grouping : expression Expr",
     "Literal : value object",
-    "Unary : operator token, right Expr",
+    "Unary : operator Token, right Expr",
     "Variable: name Token",
 ]
 
@@ -16,6 +16,8 @@ STMT_DEFS = [
     "Print : expression Expr",
     "Var : name Token, init Expr",
     "Block: statements list[Stmt]",
+    "If: condition Expr, then_branch Stmt, else_branch Stmt",
+    "While: condition Expr, stmt Stmt",
 ]
 
 

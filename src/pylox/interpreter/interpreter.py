@@ -1,4 +1,13 @@
-from pylox.parser.stmt import Expression, Print, Stmt, StmtVisitor, Var, Block
+from pylox.parser.stmt import (
+    Expression,
+    If,
+    Print,
+    Stmt,
+    StmtVisitor,
+    Var,
+    Block,
+    While,
+)
 from pylox.parser.expr import (
     Assign,
     Binary,
@@ -45,6 +54,16 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self._env.assign(expr.name, val)
         return val
 
+    def visit_if(self, stmt: If):
+        if self._is_truthy(self._eval(stmt.condition)):
+            self.execute(stmt.then_branch)
+        elif stmt.then_branch is not None:
+            self.execute(stmt.else_branch)
+
+    def visit_while(self, stmt: While):
+        while self._is_truthy(self._eval(stmt.condition)):
+            self.execute(stmt.stmt)
+
     def visit_var(self, stmt: Var):
         init_val = None
         if stmt.init is not None:
@@ -85,6 +104,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_unary(self, expr: Unary) -> object:
         right_val = self._eval(expr.right)
+        self._check_number_operand(expr.operator, right_val)
         if expr.operator.type == TokenType.MINUS:
             return -float(right_val)
         if expr.operator.type == TokenType.BANG:
@@ -101,24 +121,41 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def _types_equal(self, a: TokenType, b: TokenType):
         return a.value == b.value
 
+    def _check_number_operand(self, operator: Token, operand: object):
+        if isinstance(operand, float):
+            return
+        raise RuntimeError(operator, "Operand must be a number.")
+
+    def _check_number_operands(self, operator: Token, left: object, right: object):
+        if isinstance(left, float) and isinstance(right, float):
+            return
+        raise RuntimeError(operator, "Operands must be numbers.")
+
     def visit_binary(self, expr: Binary):
         left = self._eval(expr.left)
         right = self._eval(expr.right)
         if self._types_equal(expr.operator.type, TokenType.MINUS):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) - float(right)
         if self._types_equal(expr.operator.type, TokenType.STAR):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) * float(right)
         if self._types_equal(expr.operator.type, TokenType.SLASH):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) / float(right)
         if self._types_equal(expr.operator.type, TokenType.PLUS):
             return left + right
         if self._types_equal(expr.operator.type, TokenType.GREATER):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) > float(right)
         if self._types_equal(expr.operator.type, TokenType.GREATER_EQUAL):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) >= float(right)
         if self._types_equal(expr.operator.type, TokenType.LESS):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) < float(right)
         if self._types_equal(expr.operator.type, TokenType.LESS_EQUAL):
+            self._check_number_operands(expr.operator, left, right)
             return float(left) <= float(right)
         if self._types_equal(expr.operator.type, TokenType.EQUAL_EQUAL):
             return left == right
